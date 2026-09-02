@@ -1,6 +1,7 @@
 import os
 import zarr
 import numpy as np
+from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
@@ -10,17 +11,30 @@ from matplotlib.widgets import Slider
 # dispersos por fila (que es lo que pasaba con np.memmap en un disco normal).
 #
 # OJO: se guarda FUERA de OneDrive a propósito. Si quedara dentro de la
-# carpeta sincronizada, escribir ~40,000 archivos de chunk (20 GB) dispara
-# la sincronización de OneDrive en cada escritura (mucho más lento) y además
-# sube 20 GB de datos aleatorios de prueba a la nube sin necesidad.
-RUTA_MATRIZ = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\Temp"), "matriz_100k_categorica.zarr")
+# carpeta sincronizada, escribir decenas de miles de archivos de chunk
+# dispara la sincronización de OneDrive en cada escritura (mucho más lento).
+DIR_SCRIPT = os.path.dirname(os.path.abspath(__file__))
+RUTA_FOTO = os.path.join(DIR_SCRIPT, "20241015_192425.jpg")
+RUTA_MATRIZ = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\Temp"), "matriz_100k_foto_mosaico.zarr")
 FORMA = (100_000, 100_000)
-DTYPE = "uint8"  # valores enteros 0-9, 1 byte c/u -> ~10 GB en disco
+DTYPE = "uint8"  # valores enteros 0-9, 1 byte c/u
 CHUNK = (500, 500)  # tamaño de bloque = tamaño de ventana inicial
 
-# 10 categorías (0-9) -> 10 colores distintos del colormap categórico "tab10"
+# 10 niveles de brillo (0=oscuro, 9=claro) -> colormap secuencial "gray"
+# (no "tab10": ese es cualitativo/sin orden, rompe la continuidad de la foto)
 N_CATEGORIAS = 10
-CMAP = "tab10"
+CMAP = "gray"
+
+
+def cargar_foto_categorizada(ruta_foto, n_categorias):
+    # "L" = escala de grises por luminancia (PIL usa la fórmula estándar
+    # L = 0.299*R + 0.587*G + 0.114*B). Luego se reparte el rango 0-255
+    # en n_categorias bandas iguales: 0 = más oscuro, n-1 = más claro.
+    # rotate(-90, expand=True): la foto original quedó horizontal, se gira
+    # a vertical (sentido horario) antes de usarla como tile del mosaico.
+    img = Image.open(ruta_foto).convert("L").rotate(-90, expand=True)
+    gris = np.asarray(img, dtype=np.uint16)
+    return ((gris * n_categorias) // 256).astype(np.uint8)
 
 
 def verificar_matriz(z, forma):
@@ -33,21 +47,24 @@ def verificar_matriz(z, forma):
     return completo
 
 
-def crear_matriz_si_no_existe(ruta, forma, dtype, chunk, banda_filas=2000):
+def crear_matriz_si_no_existe(ruta, forma, dtype, chunk, foto_categorizada, banda_filas=2000):
     if os.path.exists(ruta):
         return
-    print(f"Creando matriz {forma} en disco ({ruta})... esto puede tardar varios minutos.")
+    print(f"Creando matriz {forma} en disco ({ruta}) a partir de la foto (mosaico)... esto puede tardar varios minutos.")
     z = zarr.open(ruta, mode="w", shape=forma, chunks=chunk, dtype=dtype)
-    rng = np.random.default_rng()
+    img_h, img_w = foto_categorizada.shape
+    col_idx = np.arange(forma[1]) % img_w
     for inicio in range(0, forma[0], banda_filas):
         fin = min(inicio + banda_filas, forma[0])
-        z[inicio:fin, :] = rng.integers(0, N_CATEGORIAS, size=(fin - inicio, forma[1]), dtype=np.uint8)
+        fila_idx = np.arange(inicio, fin) % img_h
+        z[inicio:fin, :] = foto_categorizada[np.ix_(fila_idx, col_idx)]
         print(f"  {fin}/{forma[0]} filas generadas", end="\r")
     print("\nMatriz creada.")
     verificar_matriz(z, forma)
 
 
-crear_matriz_si_no_existe(RUTA_MATRIZ, FORMA, DTYPE, CHUNK)
+foto_categorizada = cargar_foto_categorizada(RUTA_FOTO, N_CATEGORIAS)
+crear_matriz_si_no_existe(RUTA_MATRIZ, FORMA, DTYPE, CHUNK, foto_categorizada)
 matriz = zarr.open(RUTA_MATRIZ, mode="r")
 verificar_matriz(matriz, FORMA)
 
