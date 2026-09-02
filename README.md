@@ -22,7 +22,7 @@ Por eso se tomó la decisión de reemplazar los datos aleatorios por los de una 
 
 ### Origen de los datos
 
-Los valores de la matriz (enteros 0-9) salen de una foto (`20241015_192425.jpg`), convertida a escala de grises por luminancia y cuantizada en 10 bandas de brillo. La foto se repite en mosaico hasta cubrir las 100,000×100,000 celdas.
+Los valores de la matriz (enteros 0-9) salen de una foto (`imagen .jpg`), convertida a escala de grises por luminancia y cuantizada en 10 bandas de brillo. La foto se repite en mosaico hasta cubrir las 100,000×100,000 celdas.
 
 ### Rendimiento: RAM vs. disco duro
 
@@ -77,7 +77,7 @@ La primera ejecución genera los datos en disco (`%LOCALAPPDATA%\matriz_100k_fot
 ```
 Laboratorio 1/
 ├── matriz.py                          # script principal
-├── 20241015_192425.jpg                # foto fuente (no se sube al repo)
+├── imagen .jpg                         # foto fuente
 ├── Matriz representacion en disco duro/   # capturas: tamaño y estructura en disco
 └── Matriz representacion Grafica/         # captura: visualización final
 ```

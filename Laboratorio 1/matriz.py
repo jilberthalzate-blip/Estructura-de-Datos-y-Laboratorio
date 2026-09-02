@@ -14,7 +14,7 @@ from matplotlib.widgets import Slider
 # carpeta sincronizada, escribir decenas de miles de archivos de chunk
 # dispara la sincronización de OneDrive en cada escritura (mucho más lento).
 DIR_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-RUTA_FOTO = os.path.join(DIR_SCRIPT, "20241015_192425.jpg")
+RUTA_FOTO = os.path.join(DIR_SCRIPT, "imagen .jpg")
 RUTA_MATRIZ = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\Temp"), "matriz_100k_foto_mosaico.zarr")
 FORMA = (100_000, 100_000)
 DTYPE = "uint8"  # valores enteros 0-9, 1 byte c/u
