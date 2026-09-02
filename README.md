@@ -14,9 +14,32 @@ Una matriz de ese tamaño no cabe en memoria (~10-80 GB según el tipo de dato).
 - Cada vez que el usuario navega o hace zoom, solo se leen y descomprimen los 1-4 bloques que intersectan la vista actual — nunca la matriz completa.
 - El proceso de Python usa unos pocos cientos de MB de RAM sin importar que la matriz "lógica" pese varios GB en disco.
 
+### Evolución del enfoque de datos
+
+La primera versión de este laboratorio generaba la matriz con **valores aleatorios uniformes** (0-9), solo para probar que el sistema de bloques/paginación funcionara sin cargar todo en RAM. El problema fue que con ruido aleatorio no se podía comprobar visualmente que el paneo y el zoom estuvieran mostrando la región correcta de la matriz — cualquier zona se veía igual de aleatoria que otra.
+
+Por eso se tomó la decisión de reemplazar los datos aleatorios por los de una **foto real**, para poder visualizar gráficamente y confirmar a simple vista que la navegación por bloques funciona correctamente sobre datos con estructura reconocible, no solo ruido.
+
 ### Origen de los datos
 
 Los valores de la matriz (enteros 0-9) salen de una foto (`20241015_192425.jpg`), convertida a escala de grises por luminancia y cuantizada en 10 bandas de brillo. La foto se repite en mosaico hasta cubrir las 100,000×100,000 celdas.
+
+### Rendimiento: RAM vs. disco duro
+
+El objetivo del ejercicio era que la matriz completa **nunca se cargara por completo en RAM**. Resultados medidos:
+
+**Disco duro (almacenamiento persistente):**
+
+| Versión de los datos | Tamaño sin comprimir | Tamaño real en disco |
+|---|---|---|
+| Aleatoria uniforme (primera versión) | ~10 GB (`uint8`) | ~4.54 GB (Zstd apenas comprime ruido puro) |
+| Foto real en mosaico (versión final) | ~10 GB (`uint8`) | ~1.08 GB (Zstd comprime bien porque hay zonas uniformes y gradientes) |
+
+**RAM (memoria durante la ejecución):**
+
+- El proceso mide un *working set* de solo **~114 MB**, sin importar que la matriz pese varios GB en disco.
+- Ese uso de RAM es prácticamente constante: no crece con el tamaño de la matriz, porque en cada vista solo se leen y descomprimen los 1-4 bloques de `500×500` que intersectan la ventana visible — el resto se queda en disco.
+- Comparación: cargar la matriz completa con `np.load()` habría requerido tener los ~10 GB completos en RAM de una sola vez, algo inviable en un equipo con 16 GB.
 
 ### Controles
 
