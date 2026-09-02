@@ -23,6 +23,23 @@ Los valores de la matriz (enteros 0-9) salen de una foto (`20241015_192425.jpg`)
 - **Sliders** (`← →`, `↑ ↓`): desplazan la ventana visible por la matriz (pan).
 - **Rueda del mouse**: hace zoom in/out, centrado en el punto donde estabas viendo.
 
+### Formato de los archivos de datos
+
+Dentro de `matriz_100k_foto_mosaico.zarr/` hay dos tipos de archivo:
+
+- **`zarr.json`** — el único archivo de texto plano (JSON), con los metadatos: tamaño de la matriz, tipo de dato, tamaño de bloque.
+- **Los archivos dentro de `c/.../...`** (ej. `c/199/199`) — **binarios comprimidos con Zstandard**, no texto. Cada uno guarda un bloque de 500×500 valores enteros (0-9).
+
+Si abres uno de esos archivos de bloque en un editor de texto (Notepad, VS Code, etc.), vas a ver símbolos ilegibles (`Ð`, `Ë`, `œ`...) — eso es normal y esperado: cada símbolo raro es solo cómo el editor intenta mostrar como "letra" un byte comprimido que no corresponde a ningún carácter imprimible. No es un archivo corrupto ni un error.
+
+No hace falta leer esos archivos manualmente — `zarr` los descomprime automáticamente cuando el script pide `matriz[fila, columna]`. Para comprobarlo, esto imprime los valores reales (números 0-9) de un bloque:
+
+```python
+import zarr
+z = zarr.open(r"%LOCALAPPDATA%\matriz_100k_foto_mosaico.zarr", mode="r")
+print(z[0:5, 0:10])
+```
+
 ### Cómo correrlo
 
 ```bash
